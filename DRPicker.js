@@ -73,11 +73,12 @@
         weekdaysMin : ['Pz','Pzt','Sa','Çar','Per','Cu','Cmt'],
         weekdaysIndex : [0,1,2,3,4,5,6],
         firstDay: 0,
-        firstTable: [this.today.getDate(),this.today.getMonth(),this.today.getFullYear()],
-        secondTable: [this.today.getDate(),this.today.getMonth() + 1,this.today.getFullYear()],
+        firstTable: [this.today.getDate(),this.today.getMonth() + 1,this.today.getFullYear()],
+        secondTable: [this.today.getDate(),this.today.getMonth() + 2,this.today.getFullYear()],
         seperator: '/',
         headersForTables:0,//['Başlangıç','Bitiş'],
         mode:1,//0 = tek tablo, 1 = iki bağımsız tablo, 2 = iki bağımlı tablo
+        closeButton: false,
       }
       // ayarları oluştur varsa kullanıcı ayarlarını kullan
       this.options = defaults;
@@ -216,15 +217,29 @@
         makeTable.call(this,wMS,'second');
         gunler.call(this,'second');
       }
-      var closeBtn = this.o.crt('div').attr('id','DRPickerClose').apn('Close',1).put(this.mainDiv).end();
+      if (this.options.closeButton) {
+        this.o.crt('div').attr('id','DRPickerClose').apn('Close',1).put(this.mainDiv).end();
+      }
       initEvents.call(this);
     }
     function initEvents(){
       var dis = this;
+      var kapat = true;
       document.getElementById(this.options.elementId).addEventListener('click',this.open.bind(this));
       document.getElementById('firstprevMonth').addEventListener('click',this.SDatePrevMonth.bind(this));
       if(this.options.mode != 2){document.getElementById('firstnextMonth').addEventListener('click',this.SDateNextMonth.bind(this));}
-      document.getElementById('DRPickerClose').addEventListener('click',this.close.bind(this),true);
+      if (document.getElementById('DRPickerClose')) {
+        document.getElementById('DRPickerClose').addEventListener('click',this.close.bind(this),true);
+      }
+      this.mainDiv.addEventListener('mouseover',function(){
+        kapat = false;
+      });
+      this.mainDiv.addEventListener('mouseout',function(){
+        kapat = true;
+      });
+      document.body.addEventListener('click',function(){
+        kapat && dis.close.call(dis)
+      },true);
       aksiyonEkle(this)
       if(this.options.mode != 0){
         if(this.options.mode != 2){document.getElementById('secondprevMonth').addEventListener('click',this.EDatePrevMonth.bind(this));}
@@ -284,7 +299,7 @@
           var trDays = this.o.crt('tr').t;
           for (var i = 0; i < 7; i++) {
             div[i] = this.o.crt('div');
-            td[i] = this.o.crt('td').attr('height','32px').attr('width','32px').attr('align','center').apn(div[i].t);
+            td[i] = this.o.crt('td').attr('align','center').apn(div[i].t);
             var dataDateAy = ((ay+1) <= 9)?'0'+(ay+1):(ay+1);
             if(i == ilkGün){
               ilkGün = (ilkGün == 6)?0:i + 1;
@@ -308,7 +323,15 @@
         el.ontouchstart = function(){sinif(1)};
         el.onmouseleave = function(){sinif(0)};
         el.ontouchend = function(){sinif(0)};
-        function sinif(a){ if(a == 1 ){el.classList.add('hovering')}else{el.classList.remove('hovering')}}
+        function sinif(a){
+          if(a == 1 ){
+            el.classList.add('hovering');
+            if (dis.endSelected[0] === 0) {
+              isRange(dis,el.parentNode.getAttribute('data-date'));
+            }
+      
+          }else{el.classList.remove('hovering')}
+        }
         function eylem(){
           var close = false;
           var yeniDate = el.parentNode.getAttribute('data-date');
@@ -317,8 +340,17 @@
             el.className += ' clicked sclicked onlysclicked';
           }
           else if(dis.startSelected[0] === 1 && dis.endSelected[0] === 0){//bir seçim varsa
-            dis.endSelected[0] = 1;dis.endSelected[1] = yeniDate;
-            el.className += ' clicked eclicked';
+            if (yeniDate > dis.startSelected[1]) {
+              dis.endSelected[0] = 1;dis.endSelected[1] = yeniDate;
+              el.className += ' clicked eclicked';
+            }
+            else {
+              dis.endSelected[0] = 1;
+              dis.endSelected[1] = dis.startSelected[1];
+              dis.startSelected[1] = yeniDate;
+              document.querySelectorAll('.sclicked').forEach(function(l){l.classList.remove('sclicked');l.classList.add('eclicked')});
+              el.className += ' clicked sclicked';
+            }
             document.querySelector('.onlysclicked').classList.remove('onlysclicked');
             close = true;
           }
@@ -342,7 +374,7 @@
           }
           isRange(dis);
           dis.WriteToInput();
-          close && dis.close.call(dis);
+          // close && dis.close.call(dis);
         }
       });
     }
@@ -370,14 +402,23 @@
       dis.endSelected = [0];
     }
 
-    function isRange(dis){
+    function isRange(dis,hoverDate){
       document.querySelectorAll('.inRange').forEach(function(l){l.classList.remove('inRange')});
-      document.querySelectorAll('#DRPicker table td').forEach(function(td){
-        var date = td.getAttribute('data-date');
-        if(date > dis.startSelected[1] && date < dis.endSelected[1]){
-          td.classList.add('inRange');
-        }
-      });
+      if (typeof hoverDate != 'undefined') {
+        document.querySelectorAll('#DRPicker table td').forEach(function(td){
+          var date = td.getAttribute('data-date');
+          if( (date > dis.startSelected[1] && date < hoverDate ) || (date < dis.startSelected[1] && date > hoverDate ) ){
+            td.classList.add('inRange');
+          }
+        });
+      } else {
+        document.querySelectorAll('#DRPicker table td').forEach(function(td){
+          var date = td.getAttribute('data-date');
+          if(date > dis.startSelected[1] && date < dis.endSelected[1]){
+            td.classList.add('inRange');
+          }
+        });
+      }
     }
     // Alet Çantası
     function overWrite(source, properties) {
