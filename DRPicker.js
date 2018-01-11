@@ -236,6 +236,9 @@
       });
       this.mainDiv.addEventListener('mouseout',function(){
         kapat = true;
+        if (dis.endSelected[0] === 0) {
+          document.querySelectorAll('.inRange').forEach(function(l){l.classList.remove('inRange')});
+        }
       });
       document.body.addEventListener('click',function(){
         kapat && dis.close.call(dis)
@@ -261,7 +264,11 @@
                   monthyearTD = this.o.crt('th').attr('id',arguments[1]+'monthyear').attr('align','center').attr('colspan','5')
                                 .apn([this.o.crt('span').attr('id',arguments[1]+'month').t,
                                       this.o.crt('span').apn(' - ',1).t,
-                                      this.o.crt('span').attr('id',arguments[1]+'year').t
+                                      this.o.crt('select').attr('style','padding:0 0px;border:0;font-size:16px;font-weight:bold').apn(
+                                        this.o.crt('option').apn(
+                                          this.o.crt('span').attr('id',arguments[1]+'year').t
+                                        ).t
+                                      ).t
                                 ]).t,
                   nextMonth = this.o.crt('th').attr('id',arguments[1]+'nextMonth').attr('align','right')
                               .apn(
@@ -404,12 +411,23 @@
 
     function isRange(dis,hoverDate){
       document.querySelectorAll('.inRange').forEach(function(l){l.classList.remove('inRange')});
-      if (typeof hoverDate != 'undefined') {
+      if (typeof hoverDate != 'undefined' && dis.startSelected[0] === 1) {
         document.querySelectorAll('#DRPicker table td').forEach(function(td){
           var date = td.getAttribute('data-date');
-          if( (date > dis.startSelected[1] && date < hoverDate ) || (date < dis.startSelected[1] && date > hoverDate ) ){
-            td.classList.add('inRange');
-          }
+            if ((date > dis.startSelected[1] && date <= hoverDate )) {
+              document.querySelector('.onlysclicked').removeAttribute('style');
+              dis.o.sel('.onlysclicked').attr('style','border-bottom-right-radius:0px;border-top-right-radius:0px;')
+              td.classList.add('inRange');
+            }
+            if ((date < dis.startSelected[1] && date >= hoverDate )) {
+              document.querySelector('.onlysclicked').removeAttribute('style');
+              dis.o.sel('.onlysclicked').attr('style','border-bottom-left-radius:0px;border-top-left-radius:0px;')
+              td.classList.add('inRange');
+            }
+            if ((hoverDate === dis.startSelected[1]) ) {
+              document.querySelector('.onlysclicked').removeAttribute('style');
+              return false;
+            }
         });
       } else {
         document.querySelectorAll('#DRPicker table td').forEach(function(td){
